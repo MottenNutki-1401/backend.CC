@@ -1,2 +1,8 @@
 [phases.setup]
 nixPkgs = ["python310", "jdk17"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[variables]
+PYTHON_VERSION = "3.10"
