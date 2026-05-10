@@ -1,7 +1,7 @@
 import language_tool_python
 import re
 
-tool = language_tool_python.LanguageTool('en-US')
+tool = language_tool_python.LanguageToolPublicAPI('en-US')
 
 def analyze_grammar(text, filename):
     matches = tool.check(text)
