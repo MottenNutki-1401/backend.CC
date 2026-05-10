@@ -1,10 +1,9 @@
 import language_tool_python
 import re
 
+tool = language_tool_python.LanguageTool('en-US')
+
 def analyze_grammar(text, filename):
-
-    tool = language_tool_python.LanguageToolPublicAPI('en-US')
-
     matches = tool.check(text)
 
     total_words = len(re.findall(r"\b\w+\b", text))
