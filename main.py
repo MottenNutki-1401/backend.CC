@@ -16,6 +16,7 @@ app.add_middleware(
     allow_origins=[
         "https://frontend-cc-alpha.vercel.app",
         "https://frontend-cc-ten.vercel.app",
+        "http://localhost:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
