@@ -17,7 +17,7 @@ The backend permits browser requests from two configured hosted origins and `htt
 - **`routes/grammar.py` and `routes/spelling.py`:** Call the grammar and spelling services for each submitted text.
 - **`services/text_extractor.py`:** Extracts TXT, DOCX, or PDF text.
 - **`services/preprocess.py`:** Normalizes text for similarity analysis.
-- **`services/similarity.py`:** Computes TF-IDF cosine and word-set Jaccard, combines scores, selects the top match, and assigns a status.
+- **`services/similarity.py`:** Computes TF-IDF cosine and word-set Jaccard, combines scores, selects the top match, assigns a status, and reports exact, near-exact, and embedding-based paraphrase passages with offsets into raw text.
 - **`services/grading.py`:** Combines grammar, spelling, and derived originality scores.
 - **`services/grammar.py`:** Calls LanguageTool configured for `en-US`.
 - **`services/spelling.py`:** Uses `pyspellchecker` to find unknown words.
@@ -60,6 +60,8 @@ sequenceDiagram
 5. Candidate scores are combined as 70% cosine plus 30% Jaccard. Each document is assigned its maximum score against another input document. The percentage and threshold status are returned.
 
 There is no separately computed n-gram score. Results are relative to the documents included in that request.
+
+The similarity endpoint also compares eligible sentence embeddings with the cached `sentence-transformers/paraphrase-MiniLM-L6-v2` model. Normalized embedding dot products give cosine similarity; reciprocal best sentence matches must pass `COPYCATCH_SEMANTIC_THRESHOLD` (default `0.72`). Exact and near-exact passage formats and the combined document scoring formula remain unchanged. Character spans are sliced from the original text and use exclusive end offsets. The model is loaded lazily and its files are downloaded on first use if not cached. The grading service disables passage embeddings because its output only uses the pre-existing document score.
 
 ## External Services and Dependencies
 

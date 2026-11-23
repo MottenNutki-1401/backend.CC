@@ -29,6 +29,7 @@ python-docx==1.2.0
 python-multipart==0.0.22
 requests==2.33.1
 scikit-learn==1.7.2
+sentence-transformers==6.3.0
 scipy==1.15.3
 starlette==0.52.1
 threadpoolctl==3.6.0

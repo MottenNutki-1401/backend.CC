@@ -9,6 +9,7 @@ CopyCatch is a document and text similarity detection system intended to help ed
 - Accepts PDF, DOCX, and TXT files through the upload endpoint.
 - Extracts document text and returns it with the submitted filenames.
 - Compares documents submitted in the same similarity request using TF-IDF cosine similarity and word-set Jaccard similarity.
+- Finds exact and near-exact matching sentences, and uses sentence embeddings to surface likely paraphrases with source offsets.
 - Combines those measures into a batch-relative score and assigns a threshold-based status.
 
 ### Additional features
@@ -69,6 +70,8 @@ For similarity, preprocessing is applied within the similarity service before TF
 - **N-gram analysis:** Unigrams and bigrams are included as TF-IDF features for cosine similarity. The implementation does not calculate or return a separate n-gram score.
 - **Jaccard similarity:** The service splits cleaned text on whitespace, converts each document’s tokens to a set, and divides the intersection size by the union size. It is word-set Jaccard; repeated token frequency does not affect the result. When both sets are empty, the function returns 0.
 - **Combined score:** For each document, the service selects its highest score against another submitted document: `0.7 × cosine + 0.3 × Jaccard`. It reports that value as a percentage rounded to two decimal places. Status thresholds are `High Risk` at 70% or above, `Moderate` at 40% or above, and `Safe` below 40%.
+- **Passage matches:** Exact and near-exact matches use the existing token comparison. Semantic matches are a separate `paraphrase` type: sentence embeddings from `sentence-transformers/paraphrase-MiniLM-L6-v2` are normalized and compared by cosine similarity. The default threshold is `0.72`, configurable with `COPYCATCH_SEMANTIC_THRESHOLD`. Only eligible sentence pairs that are each other's best semantic match are returned, and spans overlapping exact/near-exact matches are omitted. All spans index the original submitted text; match ends are exclusive.
+- **Model runtime:** The model loads on the first `/similarity` comparison and is cached for the process. Installing `requirements.txt` installs `sentence-transformers`; the pretrained model files are downloaded from Hugging Face on first load unless already cached locally. The grading endpoint keeps its existing score calculation and does not run semantic matching.
 
 These scores compare only documents supplied in the same request. They are similarity indicators, not definitive plagiarism findings.
 
@@ -106,7 +109,7 @@ All analysis endpoints use JSON except for the multipart upload endpoint. Analys
 |---|---|---|---|
 | GET | `/` | Root status response | Returns `{"message":"Backend Running...."}`. |
 | POST | `/upload` | Upload and extract documents | Multipart form field `files` accepts multiple files. Filename extensions allowed by the route are `.pdf`, `.docx`, and `.txt`. Returns `message`, `files`, and extracted `texts` arrays. Unsupported extensions raise HTTP 400. |
-| POST | `/similarity` | Compare submitted documents | JSON keys `texts` and `files` are accessed directly. Returns `results`; each item includes `file`, `status`, `most_similar`, and `similarity`. |
+| POST | `/similarity` | Compare submitted documents | JSON keys `texts` and `files` are accessed directly. Returns `results`; each item includes the legacy score fields, full `original_text` and `matched_text`, and `matches` with original-text offsets. Match types include `exact`, `near_exact`, and `paraphrase` (which also includes a semantic `similarity` score). |
 | POST | `/grading` | Combine grammar, spelling, and originality scores | JSON may contain `texts`, `files`, and `weights`. Default weights are grammar 40, spelling 30, originality 30. Returns per-file totals and component/final scores. |
 | POST | `/grammar` | Check grammar | JSON keys `texts` and `files` are read with empty-list defaults. Returns grammar results including issue details and original text. |
 | POST | `/spelling` | Check spelling | JSON keys `texts` and `files` are accessed directly. Returns spelling results including misspelled words and original text. |

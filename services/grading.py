@@ -11,7 +11,8 @@ def compute_grades(texts, filenames, weights):
     # similarity results
     similarity_results = compute_all_similarities(
         texts,
-        filenames
+        filenames,
+        include_semantic_matches=False,
     )
 
     results = []
