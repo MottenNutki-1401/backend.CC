@@ -187,6 +187,12 @@ def compute_all_similarities(texts, filenames):
             find_matching_passages(texts[i], texts[most_similar_index])
             if most_similar_index >= 0 else []
         )
+        # Keep the unmodified extracted text alongside offsets that refer to it.
+        # Similarity scoring above continues to use cleaned_texts only.
+        result["original_text"] = texts[i]
+        result["matched_text"] = (
+            texts[most_similar_index] if most_similar_index >= 0 else ""
+        )
         results.append(result)
 
     return results
