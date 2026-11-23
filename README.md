@@ -17,6 +17,7 @@ CopyCatch is a document and text similarity detection system intended to help ed
 - Grammar checking through LanguageTool configured for `en-US`.
 - Spelling checking through `pyspellchecker`.
 - A grading endpoint combines grammar, spelling, and originality scores using supplied or default weights. This is separate from the core similarity result.
+- An explicitly started educational feedback job generates individual student PDFs, a teacher overview PDF, an assessment CSV, and a ZIP bundle.
 
 ## Technology Stack
 
@@ -29,6 +30,8 @@ CopyCatch is a document and text similarity detection system intended to help ed
 - pyspellchecker (spelling checking)
 
 The complete pinned Python dependency list is in `requirements.txt`.
+
+The feedback report generator reads `OPENAI_API_KEY` and optional `OPENAI_MODEL` from the environment or `.env` (default model `gpt-6-luna`). Copy `.env.example` to `.env` and set your key locally; `.env` is git-ignored. Never commit or print the key.
 
 ## System Architecture
 
@@ -113,6 +116,14 @@ All analysis endpoints use JSON except for the multipart upload endpoint. Analys
 | POST | `/grading` | Combine grammar, spelling, and originality scores | JSON may contain `texts`, `files`, and `weights`. Default weights are grammar 40, spelling 30, originality 30. Returns per-file totals and component/final scores. |
 | POST | `/grammar` | Check grammar | JSON keys `texts` and `files` are read with empty-list defaults. Returns grammar results including issue details and original text. |
 | POST | `/spelling` | Check spelling | JSON keys `texts` and `files` are accessed directly. Returns spelling results including misspelled words and original text. |
+| GET | `/feedback-reports/configuration` | Verify feedback API setup | Performs a no-token model-list check; returns model and boolean key/model status only. |
+| POST | `/feedback-reports/connectivity-test` | Run a tiny sample feedback call | One bounded sample request; response contains generated-field names and token usage, never the API key. |
+| POST | `/feedback-reports/jobs` | Start report generation | Explicitly processes 2–30 supplied documents. Body: `assignment_title`, `texts`, `files`, optional `student_names`. Returns a job ID. |
+| GET | `/feedback-reports/jobs/{job_id}` | Check progress | Returns queued/processing/completed/failed status, counts, token usage, and available artifact links. |
+| GET | `/feedback-reports/jobs/{job_id}/download` | Download ZIP | Individual student PDFs, teacher overview PDF, and assessment CSV. |
+| GET | `/feedback-reports/jobs/{job_id}/teacher.pdf` | Download teacher PDF | Includes per-student similarity/status and generated feedback summary. |
+| GET | `/feedback-reports/jobs/{job_id}/summary.csv` | Download assessment CSV | Includes per-student score, status, feedback summary, recommendations, and practice activities. |
+| GET | `/feedback-reports/jobs/{job_id}/students/{student_id}.pdf` | Download an individual report | Student IDs are returned by the job status endpoint. |
 
 The source does not define explicit request/response schemas for these endpoints. `texts` and `files` are expected to be corresponding arrays, but the routes do not consistently validate their types or lengths.
 
@@ -152,7 +163,7 @@ These are descriptions of the inspected code, not a compliance assessment. This 
 - Scanned PDF OCR is not implemented. DOCX extraction reads paragraphs but does not traverse tables.
 - Empty documents, mismatched text/filename arrays, malformed files, and large requests do not have comprehensive validation or normalized error handling.
 - A one-document similarity request has no other candidate; current code returns the same filename as `most_similar` with a zero score.
-- There is no generated report or report-download endpoint.
+- Feedback report jobs use in-memory state and local files; job state does not survive a process restart, and multi-worker deployments need shared job/artifact storage and access control.
 - Grammar and spelling checks use heuristic scores and are additional features, not the core similarity method.
 
 ## Future Improvements

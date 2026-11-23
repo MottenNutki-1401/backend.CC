@@ -7,6 +7,7 @@ from routes.similarity import router as similarity_router
 from routes.spelling import router as spelling_router
 from routes.grammar import router as grammar_router 
 from routes.grading import router as grading_router
+from routes.feedback_reports import router as feedback_reports_router
 
 app = FastAPI()
 
@@ -34,3 +35,4 @@ app.include_router(similarity_router)
 app.include_router(spelling_router)
 app.include_router(grammar_router)
 app.include_router(grading_router)
+app.include_router(feedback_reports_router)
